@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Cadastro de Desaparecidos</title>
+</head>
+
+<body>
+
+<h2>Cadastrar desaparecido</h2>
+
+<input type="text" id="c-nome" placeholder="Nome"><br>
+<input type="text" id="c-contato" placeholder="Contato"><br>
+<input type="text" id="c-endereco" placeholder="Endereço"><br>
+<input type="text" id="c-foto" placeholder="Foto URL"><br>
+<textarea id="c-obs" placeholder="Observações"></textarea><br>
+
+<select id="c-status">
+  <option value="desaparecido">Desaparecido</option>
+  <option value="encontrado">Encontrado</option>
+  <option value="em-abrigo">Em abrigo</option>
+</select><br><br>
+
+<button onclick="cadastrar()">Cadastrar</button>
+
+<hr>
+
+<h2>Atualizar caso</h2>
+
+<input type="number" id="u-id" placeholder="ID"><br>
+
+<select id="u-status">
+  <option value="desaparecido">Desaparecido</option>
+  <option value="encontrado">Encontrado</option>
+  <option value="em-abrigo">Em abrigo</option>
+</select><br>
+
+<textarea id="u-obs" placeholder="Observações"></textarea><br>
+
+<button onclick="atualizar()">Atualizar</button>
+
+<hr>
+
+<h2>Lista de desaparecidos</h2>
+<button onclick="carregar()">Atualizar lista</button>
+<div id="lista"></div>
+
+<script>
+
+const API = "http://localhost:3000";
+
+async function cadastrar() {
+  const nome = document.getElementById('c-nome').value;
+  const contato = document.getElementById('c-contato').value;
+  const endereco = document.getElementById('c-endereco').value;
+
+  if (!nome || !contato || !endereco) {
+    alert("Preencha os campos obrigatórios");
+    return;
+  }
+
+  await fetch(`${API}/desaparecidos`, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      nome,
+      contato,
+      endereco,
+      foto_url: document.getElementById('c-foto').value,
+      observacoes: document.getElementById('c-obs').value,
+      status: document.getElementById('c-status').value
+    })
+  });
+
+  alert("Cadastrado!");
+  carregar();
+}
+
+
+async function atualizar() {
+  const id = document.getElementById('u-id').value;
+
+  if (!id) {
+    alert("Informe o ID");
+    return;
+  }
+
+  await fetch(`${API}/desaparecidos/${id}`, {
+    method: "PUT",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      status: document.getElementById('u-status').value,
+      observacoes: document.getElementById('u-obs').value
+    })
+  });
+
+  alert("Atualizado!");
+  carregar();
+}
+
+async function remover(id) {
+  const confirmar = confirm("Tem certeza que deseja remover?");
+
+  if (!confirmar) return;
+
+  await fetch(`${API}/desaparecidos/${id}`, {
+    method: "DELETE"
+  });
+
+  alert("Removido!");
+  carregar();
+}
+
+
+async function carregar() {
+  const res = await fetch(`${API}/desaparecidos`);
+  const dados = await res.json();
+
+  const lista = document.getElementById('lista');
+  lista.innerHTML = '';
+
+  dados.forEach(pessoa => {
+    const div = document.createElement('div');
+
+    div.innerHTML = `
+      <hr>
+      <p><strong>ID:</strong> ${pessoa.id}</p>
+      <p><strong>Nome:</strong> ${pessoa.nome}</p>
+      <p><strong>Status:</strong> ${pessoa.status}</p>
+      <p><strong>Endereço:</strong> ${pessoa.endereco}</p>
+      <p><strong>Contato:</strong> ${pessoa.contato}</p>
+      <p><strong>Observações:</strong> ${pessoa.observacoes || 'Nenhuma'}</p>
+      ${pessoa.foto_url ? `<img src="${pessoa.foto_url}" width="120">` : ''}
+
+      <br><br>
+      <button onclick="remover(${pessoa.id})">🗑️ Remover</button>
+    `;
+
+    lista.appendChild(div);
+  });
+}
+
+carregar();
+
+</script>
+
+</body>
+</html>
